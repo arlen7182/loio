@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="理我">
+<meta name="theme-color" content="#eef7fd">
+<title>理我</title>
+<style>
+  /* ===== 只要改這裡 ===== */
+  /* TOPIC 在下方 <script> 裡 */
+  :root {
+    --bg: #eef7fd;
+    --card: #ffffff;
+    --text: #23384a;
+    --muted: #7d93a6;
+    --accent: #6cbff0;
+    --accent-dark: #4aa8e0;
+    --ok: #2fa66b;
+    --err: #d64545;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14202a;
+      --card: #1e2d3a;
+      --text: #e6f2fb;
+      --muted: #8fa6b8;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 28px; color: var(--muted); }
+  #poke {
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 30px;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(108, 191, 240, .4);
+    transition: transform .12s ease, background .2s;
+    cursor: pointer;
+  }
+  #poke:active { transform: scale(.92); background: var(--accent-dark); }
+  #poke:disabled { opacity: .5; }
+  .msg {
+    width: 100%; max-width: 360px;
+    margin-top: 36px;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 12px;
+    display: flex; gap: 8px;
+  }
+  .msg input {
+    flex: 1; min-width: 0;
+    border: none; outline: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 16px; /* 16px 以上 iOS 才不會自動放大 */
+  }
+  .msg button {
+    border: none; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    font-size: 15px; padding: 8px 14px;
+    cursor: pointer;
+  }
+  .msg button:disabled { opacity: .5; }
+  #status { margin-top: 18px; min-height: 22px; font-size: 15px; color: var(--muted); }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--err); }
+</style>
+</head>
+<body>
+  <h1>想他了嗎？</h1>
+  <button id="poke">理我</button>
+
+  <form class="msg" id="form">
+    <input id="text" maxlength="200" placeholder="或是傳一句話…" autocomplete="off">
+    <button id="send" type="submit">送出</button>
+  </form>
+
+  <div id="status"></div>
+
+<script>
+  // ===== 改成你在 ntfy app 訂閱的頻道名稱（要難猜）=====
+  const TOPIC = "liwo-4vw834qakm";
+  const COOLDOWN_MS = 3000; // 避免連按洗版
+
+  const poke = document.getElementById("poke");
+  const form = document.getElementById("form");
+  const text = document.getElementById("text");
+  const send = document.getElementById("send");
+  const status = document.getElementById("status");
+
+  function setStatus(msg, cls) {
+    status.textContent = msg;
+    status.className = cls || "";
+  }
+
+  async function push(message, title) {
+    // 用 JSON 方式發送，標題才可以放中文
+    const res = await fetch("https://ntfy.sh/", {
+      method: "POST",
+      body: JSON.stringify({
+        topic: TOPIC,
+        title: title,
+        message: message,
+        priority: 4,
+        tags: ["heart"]
+      })
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+  }
+
+  function lock(on) {
+    poke.disabled = on;
+    send.disabled = on;
+  }
+
+  async function run(message, title) {
+    lock(true);
+    setStatus("傳送中…");
+    try {
+      await push(message, title);
+      setStatus("已送達 💛", "ok");
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (e) {
+      setStatus("沒送出去，檢查一下網路再試一次", "err");
+    }
+    setTimeout(() => lock(false), COOLDOWN_MS);
+  }
+
+  poke.addEventListener("click", () => run("理我", "理我"));
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = text.value.trim();
+    if (!t) { text.focus(); return; }
+    run(t, "她傳訊息來了").then(() => { text.value = ""; });
+  });
+</script>
+</body>
+</html>
