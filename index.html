@@ -42,20 +42,27 @@
     padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
   }
   h1 { font-size: 20px; font-weight: 600; margin: 0 0 28px; color: var(--muted); }
-  #poke {
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    border: none;
-    background: var(--accent);
-    color: #fff;
-    font-size: 30px;
-    font-weight: 700;
-    box-shadow: 0 10px 30px rgba(108, 191, 240, .4);
-    transition: transform .12s ease, background .2s;
-    cursor: pointer;
+  .quick {
+    width: 100%; max-width: 360px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    justify-items: center;
   }
-  #poke:active { transform: scale(.92); background: var(--accent-dark); }
-  #poke:disabled { opacity: .5; }
+  .quick button {
+    width: 100%; max-width: 100px;
+    aspect-ratio: 1;
+    border: none; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-size: 16px; font-weight: 700; line-height: 1.2;
+    padding: 0 6px;
+    box-shadow: 0 6px 16px rgba(108, 191, 240, .35);
+    cursor: pointer;
+    transition: transform .1s ease;
+  }
+  .quick button.emoji { font-size: 34px; padding: 0; }
+  .quick button:active { transform: scale(.9); background: var(--accent-dark); }
+  .quick button:disabled { opacity: .5; }
   .msg {
     width: 100%; max-width: 360px;
     margin-top: 36px;
@@ -85,7 +92,17 @@
 </head>
 <body>
   <h1>想他了嗎？</h1>
-  <button id="poke">理我</button>
+  <div class="quick" id="quick">
+    <button>理我</button>
+    <button>陪我</button>
+    <button>小餅乾🍪</button>
+    <button>咬你</button>
+    <button>汪汪</button>
+    <button>不理你了</button>
+    <button class="emoji">😀</button>
+    <button class="emoji">😠</button>
+    <button class="emoji">🥺</button>
+  </div>
 
   <form class="msg" id="form">
     <input id="text" maxlength="200" placeholder="或是傳一句話…" autocomplete="off">
@@ -99,7 +116,6 @@
   const TOPIC = "liwo-4vw834qakm";
   const COOLDOWN_MS = 3000; // 避免連按洗版
 
-  const poke = document.getElementById("poke");
   const form = document.getElementById("form");
   const text = document.getElementById("text");
   const send = document.getElementById("send");
@@ -125,9 +141,11 @@
     if (!res.ok) throw new Error("HTTP " + res.status);
   }
 
+  const quickBtns = document.querySelectorAll("#quick button");
+
   function lock(on) {
-    poke.disabled = on;
     send.disabled = on;
+    quickBtns.forEach((b) => (b.disabled = on));
   }
 
   async function run(message, title) {
@@ -143,7 +161,9 @@
     setTimeout(() => lock(false), COOLDOWN_MS);
   }
 
-  poke.addEventListener("click", () => run("理我", "理我"));
+  quickBtns.forEach((b) => {
+    b.addEventListener("click", () => run(b.textContent.trim(), b.textContent.trim()));
+  });
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
